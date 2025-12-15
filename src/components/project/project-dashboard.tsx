@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { updateProjectNotes } from "@/server-actions/project-submissions";
 import { 
   BarChart, 
   Bar, 
@@ -30,7 +32,9 @@ import {
   Activity,
   Thermometer,
   Shield,
-  Maximize2
+  Maximize2,
+  PenLine,
+  Home
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -45,12 +49,13 @@ type Props = {
     risks: string;
     climateImpact: string;
     actions: string;
+    scratchpadNotes?: string;
   };
   studentName?: string;
   onReset: () => void;
 };
 
-type PanelId = "score" | "population" | "gender" | "risks" | "projection" | "threats" | "climate" | "actions" | null;
+type PanelId = "score" | "population" | "gender" | "risks" | "projection" | "threats" | "climate" | "actions" | "scratchpad" | null;
 
 // Panel Tile Component
 const PanelTile = ({ 
@@ -182,6 +187,39 @@ export const ProjectDashboard = ({
   onReset,
 }: Props) => {
   const [activePanel, setActivePanel] = useState<PanelId>(null);
+  const [scratchpadNotes, setScratchpadNotes] = useState(
+    narrative.scratchpadNotes || ""
+  );
+  const [isSaving, startSaveTransition] = useTransition();
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  // Auto-save notes when they change (debounced)
+  const saveNotes = useCallback(() => {
+    if (!scratchpadNotes) return;
+    
+    setSaveStatus("saving");
+    startSaveTransition(async () => {
+      try {
+        await updateProjectNotes(species.slug, scratchpadNotes);
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 2000);
+      } catch {
+        setSaveStatus("error");
+        setTimeout(() => setSaveStatus("idle"), 3000);
+      }
+    });
+  }, [scratchpadNotes, species.slug]);
+
+  // Auto-save when notes change (with debounce)
+  useEffect(() => {
+    if (!scratchpadNotes) return;
+    
+    const timeoutId = setTimeout(() => {
+      saveNotes();
+    }, 2000); // Save 2 seconds after user stops typing
+
+    return () => clearTimeout(timeoutId);
+  }, [scratchpadNotes, saveNotes]);
 
   // Data for Pie Chart
   const genderData = [
@@ -261,6 +299,14 @@ export const ProjectDashboard = ({
             </div>
           </div>
           <div className="flex gap-3">
+            <Link href="/">
+              <Button 
+                variant="secondary" 
+                className="gap-2 border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+              >
+                <Home className="h-4 w-4" /> Home
+              </Button>
+            </Link>
             <Button 
               onClick={() => window.print()}
               variant="secondary" 
@@ -390,30 +436,38 @@ export const ProjectDashboard = ({
               )}
             </div>
             <div className="relative mt-3 h-16">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={projectionData.slice(0, 50)}>
-                  <defs>
-                    <pattern id="tileStripePattern" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-                      <line x1="0" y1="0" x2="0" y2="6" stroke="#991b1b" strokeWidth="3" />
-                    </pattern>
-                  </defs>
-                  {extinctionYear && !result.canRecover && (
-                    <ReferenceArea 
-                      x1={extinctionYear} 
-                      x2={projectionData.slice(0, 50)[projectionData.slice(0, 50).length - 1]?.year}
-                      fill="url(#tileStripePattern)"
-                      fillOpacity={0.5}
-                    />
-                  )}
-                  <Area 
-                    type="monotone" 
-                    dataKey="population" 
-                    stroke={result.canRecover ? "#10b981" : "#f43f5e"}
-                    strokeWidth={2}
-                    fill={result.canRecover ? "#10b98120" : "#f43f5e20"}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              {(() => {
+                const previewData = projectionData.slice(0, 50);
+                const previewEndYear = previewData[previewData.length - 1]?.year;
+                const showExtinctionZone = extinctionYear && !result.canRecover && extinctionYear <= previewEndYear;
+                
+                return (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={previewData}>
+                      <defs>
+                        <pattern id="tileStripePattern" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                          <line x1="0" y1="0" x2="0" y2="6" stroke="#991b1b" strokeWidth="3" />
+                        </pattern>
+                      </defs>
+                      {showExtinctionZone && extinctionYear && (
+                        <ReferenceArea 
+                          x1={extinctionYear} 
+                          x2={previewEndYear}
+                          fill="url(#tileStripePattern)"
+                          fillOpacity={0.5}
+                        />
+                      )}
+                      <Area 
+                        type="monotone" 
+                        dataKey="population" 
+                        stroke={result.canRecover ? "#10b981" : "#f43f5e"}
+                        strokeWidth={2}
+                        fill={result.canRecover ? "#10b98120" : "#f43f5e20"}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                );
+              })()}
             </div>
           </PanelTile>
 
@@ -436,6 +490,15 @@ export const ProjectDashboard = ({
             <Shield className="mb-2 h-5 w-5 text-emerald-400" />
             <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Conservation</p>
             <p className="mt-2 line-clamp-2 text-sm text-slate-300">{narrative.actions.slice(0, 80)}...</p>
+          </PanelTile>
+
+          {/* Scratch Pad */}
+          <PanelTile onClick={() => setActivePanel("scratchpad")} color="violet" delay={0.4}>
+            <PenLine className="mb-2 h-5 w-5 text-violet-400" />
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Scratch Pad</p>
+            <p className="mt-2 line-clamp-2 text-sm text-slate-300">
+              {scratchpadNotes ? scratchpadNotes.slice(0, 60) + "..." : "Click to write notes & ideas..."}
+            </p>
           </PanelTile>
         </div>
       </main>
@@ -486,8 +549,72 @@ export const ProjectDashboard = ({
               The EAI score ranges from 0 to 1000 and measures how endangered a species is based on whether 
               reproduction can outpace the current decline rate. A score above 500 indicates that the population 
               is declining faster than it can reproduce, putting the species at serious risk.
+            </p>
+          </div>
+
+          {/* Kid-Friendly Explanation */}
+          <div className="rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 p-6">
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-amber-300">
+              🎯 What Does This Score Mean?
+            </h3>
+            
+            <div className="space-y-4 text-slate-200">
+              <p className="text-sm leading-relaxed">
+                Think of the EAI score like a <strong>danger meter</strong> for animals! 
+                It goes from 0 (totally safe) to 1000 (extreme danger).
+              </p>
+
+              <div className="rounded-xl bg-slate-800/50 p-4">
+                <p className="mb-3 font-bold text-amber-400">🤔 How do we figure it out?</p>
+                <p className="text-sm leading-relaxed">
+                  We ask one simple question: <em>"Are more babies being born than animals dying?"</em>
+                </p>
+                <ul className="mt-3 space-y-2 text-sm">
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400">✅</span>
+                    <span><strong>More babies than deaths</strong> = Population grows = Lower score (good!)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-rose-400">❌</span>
+                    <span><strong>More deaths than babies</strong> = Population shrinks = Higher score (bad!)</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="rounded-xl bg-slate-800/50 p-4">
+                <p className="mb-2 font-bold text-amber-400">📊 Your {species.name}'s numbers:</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-lg bg-emerald-500/20 p-2 text-center">
+                    <p className="text-emerald-400">Babies born</p>
+                    <p className="font-bold text-emerald-300">+{result.annualBirthRate}% per year</p>
+                  </div>
+                  <div className="rounded-lg bg-rose-500/20 p-2 text-center">
+                    <p className="text-rose-400">Animals lost</p>
+                    <p className="font-bold text-rose-300">-{result.annualDeclineRate}% per year</p>
+                  </div>
+                </div>
+                <p className="mt-3 text-center text-sm">
+                  {result.canRecover ? (
+                    <span className="text-emerald-400">🎉 Good news! More babies = species can recover!</span>
+                  ) : (
+                    <span className="text-rose-400">😟 More losses than babies = species needs our help!</span>
+                  )}
                 </p>
               </div>
+
+              <div className="rounded-xl bg-amber-500/20 p-3 text-center">
+                <p className="text-sm text-amber-200">
+                  💡 <strong>Score of {result.score}?</strong> {result.score < 250 
+                    ? "That's great! This species is doing well." 
+                    : result.score < 500 
+                      ? "This species needs watching - it's not quite balanced yet."
+                      : result.score < 750
+                        ? "This species is in trouble and needs help soon!"
+                        : "Emergency! This species needs urgent protection right now!"}
+                </p>
+              </div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-4 gap-2 text-center">
             <div className={`rounded-xl p-4 ${result.score < 250 ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400'}`}>
@@ -776,16 +903,18 @@ export const ProjectDashboard = ({
             </ResponsiveContainer>
             {/* Single Extinct Watermark - Diagonal across extinction zone */}
             {extinctionYear && !result.canRecover && (
-              <div className="pointer-events-none absolute bottom-8 right-0 top-0 flex items-center justify-center select-none" style={{ width: '22%' }}>
+              <div className="pointer-events-none absolute bottom-10 right-[-30px] top-0 flex items-center justify-center select-none" style={{ width: '22%' }}>
                 <span 
                   className="whitespace-nowrap font-black uppercase text-red-500/60"
                   style={{ 
-                    transform: 'rotate(-65deg)',
-                    fontSize: 'clamp(1rem, 4vw, 2rem)',
-                    letterSpacing: '0.4em'
+                    transform: 'rotate(-42.5deg)',
+                    fontSize: 'clamp(1.2rem, 4vw, 2rem)',
+                    letterSpacing: '0.4em',
+                    right: '50%'
+
                   }}
                 >
-                  EXTINCT
+                  NO RETURN
                 </span>
               </div>
             )}
@@ -798,6 +927,65 @@ export const ProjectDashboard = ({
                 : `At the current trajectory with ${result.annualDeclineRate}% annual decline and only ${result.annualBirthRate}% birth rate, the ${species.name} population will fall below sustainable levels (~100 individuals) by approximately ${extinctionYear}. Urgent intervention is needed.`
               }
             </p>
+          </div>
+
+          {/* Kid-Friendly Explanation */}
+          <div className="rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 p-6">
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-indigo-300">
+              🧮 How We Calculated This
+            </h3>
+            
+            <div className="space-y-4 text-slate-200">
+              <div className="rounded-xl bg-slate-800/50 p-4">
+                <p className="mb-2 font-bold text-cyan-400">Step 1: Count the babies 👶</p>
+                <p className="text-sm leading-relaxed">
+                  Every year, about <span className="font-bold text-cyan-300">{result.annualBirthRate}%</span> of the population has babies that survive. 
+                  Think of it like this: if there are 100 {species.name}s, about {Math.round(result.annualBirthRate)} new babies join the family each year!
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-slate-800/50 p-4">
+                <p className="mb-2 font-bold text-rose-400">Step 2: Count the losses 📉</p>
+                <p className="text-sm leading-relaxed">
+                  Sadly, each year about <span className="font-bold text-rose-300">{result.annualDeclineRate}%</span> of the population is lost 
+                  (from hunting, habitat loss, or other dangers). That's about {Math.round(result.annualDeclineRate)} animals lost for every 100.
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-slate-800/50 p-4">
+                <p className="mb-2 font-bold text-amber-400">Step 3: Do the math ➕➖</p>
+                <p className="text-sm leading-relaxed">
+                  We subtract losses from births: <span className="font-mono font-bold">{result.annualBirthRate}% - {result.annualDeclineRate}% = {(result.annualBirthRate - result.annualDeclineRate).toFixed(2)}%</span>
+                </p>
+                <p className="mt-2 text-sm">
+                  {result.canRecover ? (
+                    <span className="text-emerald-400">✅ Good news! More babies than losses = population grows!</span>
+                  ) : (
+                    <span className="text-rose-400">❌ Uh oh! More losses than babies = population shrinks each year.</span>
+                  )}
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-slate-800/50 p-4">
+                <p className="mb-2 font-bold text-purple-400">Step 4: Look into the future 🔮</p>
+                <p className="text-sm leading-relaxed">
+                  We start with today's population ({inputs.population.toLocaleString()} {species.name}s) and apply this change year after year. 
+                  {!result.canRecover && extinctionYear && (
+                    <span> By <span className="font-bold text-rose-300">{extinctionYear}</span>, fewer than 100 would be left — that's the "tipping point" where the species can't recover.</span>
+                  )}
+                  {result.canRecover && (
+                    <span> The population keeps growing, which means this species has a bright future! 🌟</span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl bg-indigo-500/20 p-3 text-center">
+              <p className="text-sm text-indigo-200">
+                💡 <strong>Remember:</strong> This is a prediction based on current trends. 
+                If we protect these animals, we can change the future!
+              </p>
+            </div>
           </div>
         </div>
       </PanelModal>
@@ -917,6 +1105,74 @@ export const ProjectDashboard = ({
              </div>
              </div>
              </div>
+          </div>
+        </div>
+      </PanelModal>
+
+      {/* Scratch Pad Modal */}
+      <PanelModal 
+        isOpen={activePanel === "scratchpad"} 
+        onClose={() => setActivePanel(null)}
+        title="Scratch Pad"
+        icon={PenLine}
+        color="violet"
+      >
+        <div className="space-y-6">
+          <div className="rounded-2xl bg-violet-500/20 border border-violet-500/30 p-4">
+            <p className="text-sm text-violet-200">
+              ✏️ Use this space to write down your thoughts, ideas, and observations about {species.name}!
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-slate-300">Your Notes & Ideas</label>
+              <div className="flex items-center gap-2 text-xs">
+                {saveStatus === "saving" && (
+                  <span className="text-amber-400">💾 Saving...</span>
+                )}
+                {saveStatus === "saved" && (
+                  <span className="text-emerald-400">✓ Saved!</span>
+                )}
+                {saveStatus === "error" && (
+                  <span className="text-rose-400">✗ Error saving</span>
+                )}
+                {saveStatus === "idle" && scratchpadNotes && (
+                  <span className="text-slate-500">Auto-saves as you type</span>
+                )}
+              </div>
+            </div>
+            <textarea
+              value={scratchpadNotes}
+              onChange={(e) => setScratchpadNotes(e.target.value)}
+              placeholder={`Write your thoughts about ${species.name} here...\n\n• What surprised you about the data?\n• What questions do you have?\n• Ideas for helping this species?`}
+              className="h-64 w-full resize-none rounded-xl border border-slate-700 bg-slate-800/50 p-4 text-slate-100 placeholder:text-slate-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            />
+            <p className="text-xs text-slate-500">
+              {scratchpadNotes.length} characters written
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-slate-800/50 p-4">
+            <h4 className="mb-3 font-bold text-violet-300">💡 Ideas to think about:</h4>
+            <ul className="space-y-2 text-sm text-slate-300">
+              <li className="flex items-start gap-2">
+                <span className="text-violet-400">•</span>
+                What is the biggest threat to {species.name}?
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-violet-400">•</span>
+                How does the EAI score make you feel about their future?
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-violet-400">•</span>
+                What could you do to help protect this species?
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-violet-400">•</span>
+                What did you learn that you didn't know before?
+              </li>
+            </ul>
           </div>
         </div>
       </PanelModal>
