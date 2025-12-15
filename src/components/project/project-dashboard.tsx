@@ -11,7 +11,10 @@ import {
   PieChart,
   Pie,
   Cell,
-  Tooltip
+  Tooltip,
+  AreaChart,
+  Area,
+  ReferenceLine
 } from "recharts";
 import { Download, RotateCcw, AlertTriangle, Heart } from "lucide-react";
 
@@ -56,6 +59,32 @@ export const ProjectDashboard = ({
     { name: "Threats", value: 150 }, // Fixed baseline for risks
     { name: "Climate", value: 100 }, // Fixed baseline for climate
   ];
+
+  // Population Projection Data
+  const currentYear = new Date().getFullYear();
+  const netChangeRate = (result.annualBirthRate - result.annualDeclineRate) / 100; // as decimal
+  const projectionData: { year: number; population: number }[] = [];
+
+  let projectedPop = inputs.population;
+  let extinctionYear: number | null = null;
+  const maxYears = 100; // Project up to 100 years
+
+  for (let i = 0; i <= maxYears; i++) {
+    projectionData.push({
+      year: currentYear + i,
+      population: Math.round(Math.max(0, projectedPop)),
+    });
+    
+    if (projectedPop <= 100 && !extinctionYear) {
+      extinctionYear = currentYear + i;
+    }
+    
+    if (projectedPop <= 0) break;
+    
+    projectedPop = projectedPop * (1 + netChangeRate);
+  }
+
+  const yearsToExtinction = extinctionYear ? extinctionYear - currentYear : null;
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
@@ -234,6 +263,91 @@ export const ProjectDashboard = ({
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </motion.div>
+
+        {/* Population Projection Chart */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200"
+        >
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-slate-700">Population Projection</h3>
+              <p className="text-sm text-slate-500">
+                Based on {result.annualBirthRate}% birth rate and {result.annualDeclineRate}% decline rate
+              </p>
+            </div>
+            {!result.canRecover && yearsToExtinction && (
+              <div className="rounded-xl bg-rose-100 px-4 py-2 text-center">
+                <p className="text-xs font-medium text-rose-600">Estimated Functional Extinction</p>
+                <p className="text-2xl font-bold text-rose-700">{extinctionYear}</p>
+                <p className="text-xs text-rose-500">~{yearsToExtinction} years from now</p>
+              </div>
+            )}
+            {result.canRecover && (
+              <div className="rounded-xl bg-emerald-100 px-4 py-2 text-center">
+                <p className="text-xs font-medium text-emerald-600">Population Trend</p>
+                <p className="text-lg font-bold text-emerald-700">Growing ↑</p>
+              </div>
+            )}
+          </div>
+          
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={projectionData}>
+                <defs>
+                  <linearGradient id="populationGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={result.canRecover ? "#10b981" : "#ef4444"} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={result.canRecover ? "#10b981" : "#ef4444"} stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis 
+                  dataKey="year" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#64748b', fontSize: 12 }} 
+                  dy={10}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#64748b', fontSize: 12 }}
+                  tickFormatter={(value) => value >= 1000 ? `${(value/1000).toFixed(0)}k` : value}
+                />
+                <Tooltip 
+                  cursor={{ stroke: '#94a3b8', strokeDasharray: '5 5' }}
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  formatter={(value: number) => [value.toLocaleString(), 'Population']}
+                  labelFormatter={(label) => `Year ${label}`}
+                />
+                {extinctionYear && (
+                  <ReferenceLine 
+                    x={extinctionYear} 
+                    stroke="#ef4444" 
+                    strokeDasharray="5 5"
+                    label={{ value: '⚠️ Critical', fill: '#ef4444', fontSize: 12, position: 'top' }}
+                  />
+                )}
+                <Area 
+                  type="monotone"
+                  dataKey="population" 
+                  stroke={result.canRecover ? "#10b981" : "#ef4444"}
+                  strokeWidth={3}
+                  fill="url(#populationGradient)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          
+          <p className="mt-4 text-center text-sm text-slate-500">
+            {result.canRecover 
+              ? "Good news! At current rates, this population is projected to grow."
+              : `At current rates, the ${species.name} population will fall below sustainable levels (~100 individuals) by ${extinctionYear}.`
+            }
+          </p>
         </motion.div>
 
         {/* Narrative Sections */}
