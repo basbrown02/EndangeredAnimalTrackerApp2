@@ -391,21 +391,17 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
       </div>
 
       {/* Top Bar */}
-      <header className="fixed top-0 z-40 flex w-full items-center justify-between px-8 py-6">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl shadow-sm">
+      <header className="absolute left-0 right-0 top-0 z-40 flex w-full items-center justify-between px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl shadow-sm">
             {species.emoji}
           </div>
           <div>
-            <h1 className="font-display text-lg font-bold text-slate-900">
+            <h1 className="font-display text-base font-bold text-slate-900">
               {species.name} Project
             </h1>
             <p className="text-xs font-medium text-slate-500">Step {currentStep + 1} of {STEPS.length}</p>
           </div>
-        </div>
-
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-             {/* Centered Progress Bar if needed, currently at bottom or here */}
         </div>
 
         <Timer />
