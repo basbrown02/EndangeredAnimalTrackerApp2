@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { MathInputs } from "@/lib/calculations/eai";
 
@@ -51,6 +52,10 @@ export async function createProjectSubmission(
   if (error) {
     throw new Error(error.message);
   }
+
+  // Revalidate the homepage and project page so the new project shows up
+  revalidatePath("/");
+  revalidatePath(`/project/${payload.speciesSlug}`);
 
   return { success: true };
 }
@@ -176,6 +181,84 @@ export async function updateProjectNotes(
   if (error) {
     throw new Error(error.message);
   }
+
+  // Revalidate the homepage so notes show up in project cards
+  revalidatePath("/");
+
+  return { success: true };
+}
+
+export type SaveProjectPayload = {
+  speciesSlug: string;
+  mathInputs: MathInputs;
+  narrativeInputs: {
+    risks: string;
+    climateImpact: string;
+    actions: string;
+    scratchpadNotes?: string;
+  };
+  score: number;
+  tippingPointLabel: string;
+  studentName?: string | null;
+};
+
+export async function saveProjectFromDashboard(payload: SaveProjectPayload) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+    error: sessionError,
+  } = await supabase.auth.getUser();
+
+  if (sessionError || !user) {
+    throw new Error("Please sign in to save your project.");
+  }
+
+  // Check if project already exists for this species
+  const { data: existingProject } = await supabase
+    .from("project_submissions")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("species_slug", payload.speciesSlug)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (existingProject) {
+    // Update existing project
+    const { error } = await supabase
+      .from("project_submissions")
+      .update({
+        math_inputs: payload.mathInputs,
+        narrative_inputs: payload.narrativeInputs,
+        score: payload.score,
+        tipping_point_label: payload.tippingPointLabel,
+        student_name: payload.studentName,
+      })
+      .eq("id", existingProject.id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  } else {
+    // Create new project
+    const { error } = await supabase.from("project_submissions").insert({
+      user_id: user.id,
+      student_name: payload.studentName ?? null,
+      species_slug: payload.speciesSlug,
+      math_inputs: payload.mathInputs,
+      narrative_inputs: payload.narrativeInputs,
+      score: payload.score,
+      tipping_point_label: payload.tippingPointLabel,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  // Revalidate the homepage and project page
+  revalidatePath("/");
+  revalidatePath(`/project/${payload.speciesSlug}`);
 
   return { success: true };
 }

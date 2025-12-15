@@ -288,7 +288,7 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
     }
   };
 
-  const handleSubmit = (values: FormValues) => {
+  const handleSubmit = async (values: FormValues) => {
     const actualBirthCycleYears =
       values.birthFrequency === "custom"
         ? values.customBirthCycleYears || 1
@@ -305,9 +305,9 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
     };
 
     const eaiResult = calculateEai(mathInputs);
-    setResult(eaiResult);
-    setStatusMessage("Calculating your EAI score...");
+    setStatusMessage("Saving your project...");
 
+    // Save the project FIRST, then show the dashboard
     startTransition(async () => {
       try {
         await createProjectSubmission({
@@ -323,11 +323,14 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
           studentName: values.studentName,
           className: values.className,
         });
+        // Only show the dashboard AFTER the save completes successfully
+        setResult(eaiResult);
         setStatusMessage("Saved!");
       } catch (error) {
         console.error("Save error:", error);
-        // We still show the result even if save fails
-        setStatusMessage(null);
+        // Show the result even if save fails, but with error message
+        setResult(eaiResult);
+        setStatusMessage("⚠️ Could not save project. Check your connection and try again.");
       }
     });
   };
@@ -713,10 +716,20 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
                   <Button
                     type="submit"
                     size="lg"
-                    className="h-16 w-full rounded-2xl bg-emerald-600 text-xl font-bold shadow-xl hover:bg-emerald-700"
+                    className="h-16 w-full rounded-2xl bg-emerald-600 text-xl font-bold shadow-xl hover:bg-emerald-700 disabled:bg-emerald-400"
                     disabled={pending}
                   >
-                    {pending ? "Calculating..." : "Reveal EAI Score"}
+                    {pending ? (
+                      <span className="flex items-center gap-3">
+                        <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Saving your project...
+                      </span>
+                    ) : (
+                      "Reveal EAI Score"
+                    )}
                   </Button>
                 </div>
               )}
