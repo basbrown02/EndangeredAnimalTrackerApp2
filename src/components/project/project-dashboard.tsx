@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, useCallback } from "react";
+import { useState, useTransition, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateProjectNotes, saveProjectFromDashboard } from "@/server-actions/project-submissions";
@@ -36,10 +36,13 @@ import {
   PenLine,
   Home,
   Save,
-  Check
+  Check,
+  FileText,
+  Loader2
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ExportReport } from "./export-report";
 import { Species } from "@/data/species";
 import { EaiResult, MathInputs } from "@/lib/calculations/eai";
 
@@ -212,6 +215,52 @@ export const ProjectDashboard = ({
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [projectSaveStatus, setProjectSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [isProjectSaving, startProjectSaveTransition] = useTransition();
+  const [showReport, setShowReport] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  // Download PDF function
+  const downloadPDF = useCallback(async () => {
+    if (!reportRef.current) return;
+    
+    setIsDownloading(true);
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      
+      const element = reportRef.current;
+      const filename = `${species.name.replace(/\s+/g, "_")}_EAI_Report_${new Date().toISOString().split("T")[0]}.pdf`;
+      
+      const opt = {
+        margin: [0.3, 0.3, 0.3, 0.3] as [number, number, number, number],
+        filename: filename,
+        image: { type: "jpeg" as const, quality: 0.95 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          removeContainer: true,
+          backgroundColor: "#ffffff",
+          ignoreElements: (element: Element) => {
+            return element.classList?.contains("recharts-wrapper");
+          }
+        },
+        jsPDF: { 
+          unit: "in" as const, 
+          format: "letter" as const, 
+          orientation: "portrait" as const,
+          compress: true
+        },
+        pagebreak: { mode: "avoid-all" as const }
+      };
+      
+      await html2pdf().set(opt).from(element).save();
+    } catch (error) {
+      console.error("PDF download error:", error);
+      alert("There was an error generating the PDF. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [species.name]);
 
   // Save entire project to database
   const saveProject = useCallback(() => {
@@ -398,11 +447,11 @@ export const ProjectDashboard = ({
               </Button>
             </Link>
             <Button 
-              onClick={() => window.print()}
+              onClick={() => setShowReport(true)}
               variant="secondary" 
-              className="gap-2 border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              className="gap-2 border-violet-200 bg-violet-50 text-violet-600 hover:bg-violet-100 hover:border-violet-300"
             >
-              <Download className="h-4 w-4" /> Export
+              <FileText className="h-4 w-4" /> Export Report
             </Button>
             <Button 
               onClick={onReset}
@@ -1267,6 +1316,90 @@ export const ProjectDashboard = ({
           </div>
         </div>
       </PanelModal>
+
+      {/* Export Report Modal */}
+      <AnimatePresence>
+        {showReport && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowReport(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 40, scale: 0.95 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative my-8 w-full max-w-4xl rounded-2xl bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Report Header */}
+              <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl border-b border-slate-200 bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-xl">
+                    📄
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">School Report</h2>
+                    <p className="text-sm text-white/80">Ready to download as PDF</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={downloadPDF}
+                    disabled={isDownloading}
+                    className="gap-2 bg-white text-violet-600 hover:bg-violet-50 disabled:opacity-70"
+                  >
+                    {isDownloading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" /> Generating PDF...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" /> Download PDF
+                      </>
+                    )}
+                  </Button>
+                  <button
+                    onClick={() => setShowReport(false)}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-white transition-colors hover:bg-white/30"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Report Preview */}
+              <div className="max-h-[70vh] overflow-y-auto p-6">
+                <div className="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 p-4">
+                  <p className="flex items-center gap-2 text-sm text-emerald-700">
+                    <span className="text-lg">✨</span>
+                    <span>
+                      <strong>Ready!</strong> Click &quot;Download PDF&quot; to save your beautiful report for your school assignment!
+                    </span>
+                  </p>
+                </div>
+
+                <ExportReport
+                  ref={reportRef}
+                  species={species}
+                  result={result}
+                  inputs={inputs}
+                  narrative={{
+                    ...narrative,
+                    scratchpadNotes: scratchpadNotes,
+                  }}
+                  studentName={studentName}
+                  projectionData={projectionData}
+                  extinctionYear={extinctionYear}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
