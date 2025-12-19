@@ -18,18 +18,42 @@ export const SignInCard = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const setFriendlyFetchError = (error: unknown) => {
+    if (error instanceof TypeError && error.message.toLowerCase().includes("fetch")) {
+      setMessage(
+        "Couldn’t reach Supabase (network error). Check your NEXT_PUBLIC_SUPABASE_URL is correct and your Supabase project is not paused, then restart `npm run dev`.",
+      );
+      return;
+    }
+
+    if (error instanceof Error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage("Something went wrong. Please try again.");
+  };
+
   const handleGoogle = async () => {
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : undefined;
+    try {
+      setMessage(null);
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : undefined;
 
-    if (!origin) return;
+      if (!origin) {
+        setMessage("Missing browser origin. Please refresh and try again.");
+        return;
+      }
 
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${origin}/auth/callback`,
-      },
-    });
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${origin}/auth/callback`,
+        },
+      });
+    } catch (error) {
+      setFriendlyFetchError(error);
+    }
   };
 
   const handleEmailSubmit = async (formData: FormData) => {
@@ -44,15 +68,31 @@ export const SignInCard = () => {
         return;
       }
 
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+      try {
+        if (mode === "signup") {
+          const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                student_name: studentName || null,
+              },
+            },
+          });
+
+          if (error) {
+            setMessage(error.message);
+            return;
+          }
+
+          setMessage("Account created! Check your email to verify and log in.");
+          setMode("signin");
+          return;
+        }
+
+        const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
-          options: {
-            data: {
-              student_name: studentName || null,
-            },
-          },
         });
 
         if (error) {
@@ -60,25 +100,13 @@ export const SignInCard = () => {
           return;
         }
 
-        setMessage("Account created! Check your email to verify and log in.");
-        setMode("signin");
-        return;
+        setMessage("Welcome back! Redirecting...");
+
+        // Refresh the page to show the logged-in state (species selection)
+        router.refresh();
+      } catch (error) {
+        setFriendlyFetchError(error);
       }
-
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        setMessage(error.message);
-        return;
-      }
-
-      setMessage("Welcome back! Redirecting...");
-      
-      // Refresh the page to show the logged-in state (species selection)
-      router.refresh();
     });
   };
 

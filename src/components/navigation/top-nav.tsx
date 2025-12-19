@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Star } from "lucide-react";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
@@ -11,21 +12,16 @@ type Props = {
 
 export const TopNav = ({ isAuthed, userLabel }: Props) => {
   return (
-    <header className="flex items-center justify-between gap-4 py-6">
-      <Link href="/" className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-3xl">
-          <span role="img" aria-hidden>
-            🧭
-          </span>
-        </div>
-        <div>
-          <p className="font-display text-2xl leading-none text-slate-900">
-            EAT Lab
-          </p>
-          <p className="text-xs uppercase tracking-wide text-slate-500">
-            Endangered Animals Tracker
-          </p>
-        </div>
+    <header className="sticky top-0 z-50 flex items-center justify-between gap-4 border-b border-slate-200 bg-white/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+      <Link href="/" className="flex items-center">
+        <Image
+          src="/BOClogo.png"
+          alt="BANDS OF COURAGE"
+          width={200}
+          height={90}
+          className="h-16 w-auto object-contain"
+          priority
+        />
       </Link>
 
       {isAuthed ? (
@@ -37,12 +33,26 @@ export const TopNav = ({ isAuthed, userLabel }: Props) => {
           <SignOutButton />
         </div>
       ) : (
-        <Button
-          asChild
-          className="rounded-full border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
-        >
-          <a href="#start">Log in</a>
-        </Button>
+        <div className="flex items-center gap-6">
+          <nav className="hidden items-center gap-8 text-sm font-medium text-slate-700 md:flex">
+            <a className="hover:text-slate-900" href="#students">
+              Students
+            </a>
+            <a className="hover:text-slate-900" href="#teachers">
+              Teachers
+            </a>
+            <a className="hover:text-slate-900" href="#about">
+              About Us
+            </a>
+          </nav>
+
+          <Button
+            asChild
+            className="rounded-full bg-[#C6F3AE] px-7 text-sm font-semibold text-slate-900 shadow-sm hover:bg-[#B7EDA0]"
+          >
+            <a href="#start">Sign Up</a>
+          </Button>
+        </div>
       )}
     </header>
   );

@@ -1,50 +1,36 @@
-const steps = [
-  {
-    title: "Sign in safely",
-    copy: "Use Google or a guardian-approved login. No classroom chaos, just instant access.",
-  },
-  {
-    title: "Pick your endangered buddy",
-    copy: "Choose Koala, Hawksbill Turtle, Snow Leopard, Orangutan, or Black Rhino.",
-  },
-  {
-    title: "Do the maths + story",
-    copy: "Enter real numbers, tell us the risks, and imagine how climate change plays a role.",
-  },
-  {
-    title: "Share the report",
-    copy: "Print a gorgeous one-pager for your teacher and brag to your parents.",
-  },
-];
+import Image from "next/image";
+import { Reveal } from "@/components/ui/reveal";
 
 export const HowItWorks = () => {
   return (
-    <section
-      id="how"
-      className="mt-16 rounded-[32px] border border-slate-200 bg-white/80 p-8 shadow-sm"
-    >
-      <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-        How it works
-      </p>
-      <h2 className="font-display text-3xl text-slate-900">
-        Four friendly steps
-      </h2>
+    <section className="relative w-full overflow-hidden">
+      {/* Background without wave */}
+      <div className="relative w-full">
+        <Image
+          src="/background2.png"
+          alt=""
+          width={1920}
+          height={600}
+          className="pointer-events-none w-full select-none object-cover"
+        />
 
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
-        {steps.map((step, index) => (
-          <div
-            key={step.title}
-            className="rounded-3xl border border-slate-100 bg-slate-50/70 p-5"
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Step {index + 1}
+        {/* Content overlay */}
+        <div className="absolute inset-0">
+          <Reveal direction="fade" className="mx-auto flex h-full max-w-7xl flex-col items-center justify-center px-4 py-16 lg:px-6 lg:py-20">
+            {/* Title with paw icon */}
+            <h2 className="flex items-center gap-3 font-bubbles text-[clamp(2.5rem,5vw,4rem)] font-bold text-slate-900">
+              How it Works
+              <span className="text-[clamp(2.5rem,5vw,4rem)]">🐾</span>
+            </h2>
+
+            {/* Description text */}
+            <p className="mt-6 max-w-4xl text-center font-bubbles text-[clamp(1rem,1.5vw,1.25rem)] leading-relaxed text-slate-800">
+              We turn confusing scientific data into a simple, exciting activity
+              that any child can to discover whether an animal is at risk of
+              Mathematical Extinction.
             </p>
-            <h3 className="mt-2 font-display text-xl text-slate-900">
-              {step.title}
-            </h3>
-            <p className="text-sm text-slate-600">{step.copy}</p>
-          </div>
-        ))}
+          </Reveal>
+        </div>
       </div>
     </section>
   );

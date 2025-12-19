@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fredoka, Space_Grotesk } from "next/font/google";
+import { Fredoka, Fuzzy_Bubbles, Patrick_Hand, Poppins, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
 const bodyFont = Space_Grotesk({
@@ -10,6 +10,24 @@ const bodyFont = Space_Grotesk({
 const displayFont = Fredoka({
   subsets: ["latin"],
   variable: "--font-fredoka",
+  weight: ["400", "500", "600", "700"],
+});
+
+const handFont = Patrick_Hand({
+  subsets: ["latin"],
+  variable: "--font-patrick-hand",
+  weight: ["400"],
+});
+
+const fuzzyBubbles = Fuzzy_Bubbles({
+  subsets: ["latin"],
+  variable: "--font-fuzzy-bubbles",
+  weight: ["400", "700"],
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  variable: "--font-poppins",
   weight: ["400", "500", "600", "700"],
 });
 
@@ -28,11 +46,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${bodyFont.variable} ${displayFont.variable} bg-white text-slate-900 antialiased`}
+        className={`${bodyFont.variable} ${displayFont.variable} ${handFont.variable} ${fuzzyBubbles.variable} ${poppins.variable} bg-white text-slate-900 antialiased`}
       >
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(214,233,255,0.8),_transparent_55%),_radial-gradient(circle_at_bottom,_rgba(255,228,234,0.6),_transparent_50%)]">
-          {children}
-        </div>
+        {children}
       </body>
     </html>
   );
