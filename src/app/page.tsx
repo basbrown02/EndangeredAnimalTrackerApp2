@@ -9,8 +9,6 @@ import { EndangeredTicker } from "@/components/home/endangered-ticker";
 import { SignInCard } from "@/components/auth/sign-in-card";
 import { SpeciesShowcase } from "@/components/species/species-showcase";
 import { HowItWorks } from "@/components/home/how-it-works";
-import { MyProjects } from "@/components/home/my-projects";
-import { getUserProjects } from "@/server-actions/project-submissions";
 import { ThreeStepsSection } from "@/components/home/three-steps";
 import { Footer } from "@/components/home/footer";
 
@@ -36,9 +34,6 @@ export default async function Home() {
     (user?.user_metadata as { full_name?: string })?.full_name ??
     user?.email;
 
-  // Fetch user's projects if logged in
-  const projects = user ? await getUserProjects() : [];
-
   return (
     <main className="min-h-screen w-full bg-[#F9F7F0]">
       <TopNav isAuthed={Boolean(user)} userLabel={friendlyName} />
@@ -59,7 +54,6 @@ export default async function Home() {
             <section className="mt-10">
               <QuickStartCard name={friendlyName} />
             </section>
-            <MyProjects projects={projects} />
             <SpeciesShowcase />
           </>
         ) : (
