@@ -192,7 +192,7 @@ export const DashboardContent = ({ userName, projects, userEmail }: Props) => {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 + filteredProjects.length * 0.1 }}
             >
-              <Link href="/#start">
+              <Link href="/select-animal">
                 <div className="group flex h-full min-h-[280px] items-center justify-center rounded-3xl border-4 border-dashed border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 p-6 transition-all hover:scale-105 hover:border-green-400 hover:shadow-xl">
                   <div className="text-center">
                     <div className="mb-4 flex justify-center">
