@@ -48,7 +48,7 @@ export const SignInCard = () => {
       await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${origin}/auth/callback`,
+          redirectTo: `${origin}/auth/callback?next=/dashboard`,
         },
       });
     } catch (error) {
@@ -102,8 +102,8 @@ export const SignInCard = () => {
 
         setMessage("Welcome back! Redirecting...");
 
-        // Refresh the page to show the logged-in state (species selection)
-        router.refresh();
+        // Redirect to dashboard after successful sign in
+        router.push("/dashboard");
       } catch (error) {
         setFriendlyFetchError(error);
       }
