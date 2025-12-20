@@ -6,6 +6,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Search, Plus } from "lucide-react";
 import { SPECIES_LIST } from "@/data/species";
+import { CreateCustomAnimalModal } from "./create-custom-animal-modal";
 
 const getStatusColor = (status?: string) => {
   if (status === "Critically Endangered") return "text-red-600";
@@ -27,6 +28,7 @@ const getCardBackground = (index: number) => {
 export const AnimalSelection = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCustomModal, setShowCustomModal] = useState(false);
 
   const filteredSpecies = SPECIES_LIST.filter((species) =>
     species.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -35,12 +37,27 @@ export const AnimalSelection = () => {
   );
 
   const handleAnimalSelect = (slug: string) => {
-    router.push(`/project/${slug}`);
+    // Clear any previous custom animal data
+    localStorage.removeItem("customAnimalImage");
+    localStorage.removeItem("customAnimalNickname");
+    // Navigate to customize page with the species
+    router.push(`/customize-animal?species=${slug}`);
   };
 
   const handleCustomAnimal = () => {
-    // TODO: Implement custom animal creation
-    alert("Custom animal creation coming soon!");
+    setShowCustomModal(true);
+  };
+
+  const handleCustomModalContinue = (data: { image: File; species: string }) => {
+    // Store the image in localStorage as base64
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      localStorage.setItem("customAnimalImage", reader.result as string);
+      setShowCustomModal(false);
+      // Navigate to customize page
+      router.push(`/customize-animal?species=${data.species}`);
+    };
+    reader.readAsDataURL(data.image);
   };
 
   return (
@@ -190,6 +207,13 @@ export const AnimalSelection = () => {
           </button>
         </motion.div>
       </main>
+
+      {/* Custom Animal Modal */}
+      <CreateCustomAnimalModal
+        isOpen={showCustomModal}
+        onClose={() => setShowCustomModal(false)}
+        onContinue={handleCustomModalContinue}
+      />
     </div>
   );
 };

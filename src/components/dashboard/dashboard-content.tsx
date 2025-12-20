@@ -69,9 +69,11 @@ export const DashboardContent = ({ userName, projects, userEmail }: Props) => {
               <button className="rounded-full bg-green-100 px-6 py-2 font-bubbles text-lg text-green-800 underline decoration-2 underline-offset-4">
                 Dashboard
               </button>
-              <button className="rounded-full px-6 py-2 font-bubbles text-lg text-slate-600 hover:bg-green-50">
-                Achievements
-              </button>
+              <Link href="/achievements">
+                <button className="rounded-full px-6 py-2 font-bubbles text-lg text-slate-600 hover:bg-green-50">
+                  Achievements
+                </button>
+              </Link>
               <button className="rounded-full px-6 py-2 font-bubbles text-lg text-slate-600 hover:bg-green-50">
                 Settings
               </button>
