@@ -143,9 +143,7 @@ export const DashboardContent = ({ userName, projects, userEmail }: Props) => {
 
               if (!species) return null;
 
-              const projectName =
-                project.narrative_inputs?.animalNickname ||
-                `${species.name} Project`;
+              const projectName = `${species.name} Project`;
 
               return (
                 <motion.div
