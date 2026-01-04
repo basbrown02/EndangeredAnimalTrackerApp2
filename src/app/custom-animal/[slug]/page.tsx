@@ -36,3 +36,4 @@ export default async function CustomAnimalInfoRoute({ params }: Props) {
   return <CustomAnimalInfoPage species={species} />;
 }
 
+
