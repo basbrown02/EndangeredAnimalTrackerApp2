@@ -6,6 +6,8 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { Info, X, ChevronRight, Mic, Clock, Edit3 } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 import { Species } from "@/data/species";
 import { calculateEai, MathInputs, EaiResult } from "@/lib/calculations/eai";
@@ -18,6 +20,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 // --- Types & Schema ---
 
@@ -73,15 +82,23 @@ const Thinkpad = ({
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
           className="fixed inset-0 z-50 flex flex-col bg-white"
         >
-          <div className="flex items-center justify-between border-b p-4">
-            <h2 className="text-xl font-bold text-slate-800">My Thinkpad</h2>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+          <div className="flex items-center justify-between border-b border-black p-6">
+            <div className="flex items-center gap-3">
+              <Edit3 className="h-6 w-6 text-black" />
+              <h2 className="font-['Fuzzy_Bubbles',sans-serif] text-2xl font-normal text-black">My Thinkpad</h2>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onClose}
+              className="h-12 w-12 rounded-full hover:bg-gray-100"
+            >
               <X className="h-6 w-6" />
             </Button>
           </div>
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-8 bg-white">
             <textarea
-              className="h-full w-full resize-none border-none text-xl leading-relaxed outline-none placeholder:text-slate-300"
+              className="h-full w-full resize-none rounded-[30px] border border-black bg-white p-6 font-['Fuzzy_Bubbles',sans-serif] text-lg leading-relaxed outline-none focus:border-black placeholder:text-gray-400"
               placeholder="Type your notes, ideas, and calculations here..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -112,9 +129,9 @@ const Timer = ({ duration = 60, onComplete }: { duration?: number; onComplete?: 
   const seconds = timeLeft % 60;
 
   return (
-    <div className="flex items-center gap-2 rounded-full bg-slate-900/10 px-4 py-2 text-slate-900 backdrop-blur-sm">
-      <Clock className="h-5 w-5" />
-      <span className="font-mono text-lg font-bold">
+    <div className="flex items-center gap-2 rounded-3xl bg-white px-5 py-2.5 text-black border border-black">
+      <Clock className="h-5 w-5 text-black" />
+      <span className="font-['Fuzzy_Bubbles',sans-serif] text-base font-normal text-black">
         {minutes}:{seconds.toString().padStart(2, "0")}
       </span>
     </div>
@@ -124,34 +141,46 @@ const Timer = ({ duration = 60, onComplete }: { duration?: number; onComplete?: 
 const ProgressBar = ({ current, total }: { current: number; total: number }) => {
   const progress = Math.min(100, (current / total) * 100);
   return (
-    <div className="h-2 w-64 overflow-hidden rounded-full bg-slate-200">
-      <motion.div
-        className="h-full bg-gradient-to-r from-emerald-400 to-teal-500"
-        initial={{ width: 0 }}
-        animate={{ width: `${progress}%` }}
-        transition={{ duration: 0.5 }}
-      />
+    <div className="flex items-center gap-3">
+      <div className="h-2.5 w-96 overflow-hidden rounded-[30px] bg-[#d9d9d9]">
+        <motion.div
+          className="h-full bg-[#b9f0c7] rounded-[30px]"
+          initial={{ width: 0 }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        />
+      </div>
     </div>
   );
 };
 
-const VoiceAgent = ({ speciesName, emoji }: { speciesName: string; emoji: string }) => {
+const VoiceAgent = ({ speciesName, characterImage }: { speciesName: string; characterImage?: string }) => {
   return (
-    <div className="fixed bottom-8 right-8 flex flex-col items-end gap-2">
-      <div className="mr-4 rounded-2xl rounded-br-none bg-white p-4 shadow-lg">
-        <p className="text-sm font-medium text-slate-800">
-          I'm {speciesName}! I'm here to help.
-        </p>
-      </div>
-      <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 shadow-xl ring-4 ring-white">
-        <span className="text-4xl" role="img" aria-label={speciesName}>
-          {emoji}
-        </span>
-        <div className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-white">
-          <Mic className="h-4 w-4" />
+    <div className="fixed bottom-8 right-8 flex flex-col items-center gap-2 z-50">
+      <div className="relative group cursor-pointer">
+        <div className="relative flex h-24 w-24 items-center justify-center rounded-full overflow-hidden bg-white">
+          {characterImage ? (
+            <Image 
+              src={characterImage} 
+              alt={speciesName}
+              width={96}
+              height={96}
+              className="h-full w-full object-cover"
+              priority
+            />
+          ) : (
+            <span className="text-4xl" role="img" aria-label={speciesName}>
+              🦁
+            </span>
+          )}
+          <div className="absolute -bottom-1 -right-1 flex h-10 w-10 items-center justify-center rounded-full bg-[#0e172a]">
+            <Mic className="h-5 w-5 text-white" />
+          </div>
         </div>
       </div>
-      <p className="mr-2 text-sm font-bold text-slate-900 bg-white/80 px-2 py-1 rounded-lg backdrop-blur-sm">{speciesName}</p>
+      <p className="font-['Fuzzy_Bubbles',sans-serif] text-[20px] leading-[48px] text-black text-center">
+        Speak to {speciesName}
+      </p>
     </div>
   );
 };
@@ -171,6 +200,7 @@ const STEPS = [
 ];
 
 export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [isThinkpadOpen, setIsThinkpadOpen] = useState(false);
   const [result, setResult] = useState<EaiResult | null>(null);
@@ -193,7 +223,7 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
     resolver: zodResolver(formSchema) as any,
     mode: "onChange",
     defaultValues: {
-      studentName: defaultStudentName ?? "",
+      studentName: "",
       population: species.defaultInputs.population,
       femalePopulation: Math.round(
         species.defaultInputs.population * species.defaultInputs.femalePercentage
@@ -372,38 +402,37 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-sky-50 text-slate-900">
-      {/* Background Animation */}
-      <div className="absolute inset-0 z-0 overflow-hidden opacity-30">
-        <motion.div
-          animate={{
-            scale: [1, 1.1, 1],
-            rotate: [0, 5, -5, 0],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-emerald-200 blur-3xl"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            x: [0, 50, 0],
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-20 -left-20 h-96 w-96 rounded-full bg-blue-200 blur-3xl"
-        />
-      </div>
+    <div className="fixed inset-0 overflow-hidden bg-white text-black">{/* No animated background - clean white */}
 
       {/* Top Bar */}
-      <header className="absolute left-0 right-0 top-0 z-40 flex w-full items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl shadow-sm">
-            {species.emoji}
-          </div>
+      <header className="absolute left-0 right-0 top-0 z-40 flex w-full items-center justify-between px-6 py-5">
+        <div className="flex items-center gap-4">
+          {currentStep === 0 ? (
+            <button 
+              onClick={() => router.push("/")}
+              className="flex items-center gap-2 rounded-full bg-[#f8f8f8] hover:bg-gray-200 border border-black transition-colors px-4 py-2.5"
+            >
+              <svg className="h-5 w-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="font-['Fuzzy_Bubbles',sans-serif] text-[15px] text-black">
+                Back to species list
+              </span>
+            </button>
+          ) : (
+            <button 
+              onClick={handleBack}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f8f8f8] hover:bg-gray-200 border border-black transition-colors"
+            >
+              <svg className="h-5 w-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
           <div>
-            <h1 className="font-display text-base font-bold text-slate-900">
-              {species.name} Project
-            </h1>
-            <p className="text-xs font-medium text-slate-500">Step {currentStep + 1} of {STEPS.length}</p>
+            <p className="font-['Fuzzy_Bubbles',sans-serif] text-[15px] text-black text-center">
+              Step {currentStep + 1} out of {STEPS.length}
+            </p>
           </div>
         </div>
 
@@ -411,7 +440,7 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
       </header>
 
       {/* Main Content Area */}
-      <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-24">
+      <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-24 overflow-y-auto">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -425,31 +454,43 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
               
               {/* Step 0: Intro */}
               {currentStep === 0 && (
-                <div className="space-y-6 text-center">
-                  <h2 className="font-display text-4xl font-bold text-slate-900">
-                    Welcome, Eco Detective!
-                  </h2>
-                  <p className="text-xl text-slate-600">
-                    Let's start by getting to know you.
-                  </p>
-                  <div className="mx-auto grid max-w-md gap-6 text-left">
-                    <div className="space-y-2">
-                      <Label htmlFor="studentName" className="text-lg">What is your name?</Label>
+                <div className="space-y-8 text-center">
+                  <div className="space-y-4">
+                    <h2 className="font-['Fuzzy_Bubbles',sans-serif] text-[48px] leading-[48px] font-normal text-black">
+                      Welcome, Eco Detective!
+                    </h2>
+                    <p className="font-['Fuzzy_Bubbles',sans-serif] text-[24px] leading-[48px] font-normal text-black">
+                      You are researching the {species.name}!
+                    </p>
+                  </div>
+                  
+                  <div className="mx-auto max-w-md space-y-6 pt-4">
+                    <div className="w-full rounded-[30px] bg-white border border-black px-6 py-4">
                       <Input
                         id="studentName"
-                        placeholder="e.g. Alex"
-                        className="h-14 rounded-2xl text-lg"
+                        placeholder="Enter your name"
+                        className="h-12 rounded-[30px] text-[20px] border-0 bg-transparent font-['Fuzzy_Bubbles',sans-serif] text-black placeholder:text-[#a6a6a6] focus-visible:ring-0 focus-visible:ring-offset-0"
                         {...register("studentName")}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="className" className="text-lg">Class name</Label>
-                      <Input
-                        id="className"
-                        placeholder="e.g. 6B"
-                        className="h-14 rounded-2xl text-lg"
-                        {...register("className")}
-                      />
+                    
+                    <div className="w-full rounded-[30px] bg-white border border-black px-6 py-4">
+                      <Select
+                        value={watch("className") || ""}
+                        onValueChange={(value) => setValue("className", value, { shouldValidate: true })}
+                      >
+                        <SelectTrigger className="h-12 w-full rounded-[30px] text-[20px] border-0 bg-transparent font-['Fuzzy_Bubbles',sans-serif] text-black shadow-none focus:ring-0 [&>svg]:h-5 [&>svg]:w-5">
+                          <SelectValue placeholder="Which Class are you in?" className="text-black placeholder:text-black" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-[20px] border-black">
+                          <SelectItem value="6B Ms Waters Class" className="font-['Fuzzy_Bubbles',sans-serif] text-[16px]">
+                            6B Ms Waters Class
+                          </SelectItem>
+                          <SelectItem value="6H Mr Jacobs Class" className="font-['Fuzzy_Bubbles',sans-serif] text-[16px]">
+                            6H Mr Jacobs Class
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>
@@ -461,20 +502,20 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
                   <div className="mb-4 inline-flex rounded-full bg-yellow-100 px-4 py-1 text-sm font-bold uppercase tracking-wide text-yellow-800">
                     EA 1
                   </div>
-                  <h2 className="mb-2 font-display text-3xl font-bold text-slate-900">
+                  <h2 className="mb-2 font-['Fuzzy_Bubbles',sans-serif] text-[36px] font-normal text-black">
                     Total Population
                   </h2>
-                  <p className="mb-8 text-lg text-slate-600">
+                  <p className="mb-8 font-['Fuzzy_Bubbles',sans-serif] text-[20px] text-black">
                     How many {species.name}s are left in the wild?
                   </p>
                   <div className="mx-auto max-w-xs">
                     <Input
                       type="number"
-                      className="h-20 rounded-3xl border-4 border-slate-200 text-center text-4xl font-bold text-slate-900 focus:border-emerald-400"
+                      className="h-20 rounded-[30px] border border-black text-center text-4xl font-['Fuzzy_Bubbles',sans-serif] text-black focus:border-black focus-visible:ring-0"
                       {...register("population", { valueAsNumber: true })}
                     />
                     {errors.population && (
-                      <p className="mt-2 text-rose-500">{errors.population.message}</p>
+                      <p className="mt-2 font-['Fuzzy_Bubbles',sans-serif] text-rose-500">{errors.population.message}</p>
                     )}
                   </div>
                 </div>
@@ -486,19 +527,19 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
                    <div className="mb-4 inline-flex rounded-full bg-yellow-100 px-4 py-1 text-sm font-bold uppercase tracking-wide text-yellow-800">
                     EA 2
                   </div>
-                  <h2 className="mb-2 font-display text-3xl font-bold text-slate-900">
+                  <h2 className="mb-2 font-['Fuzzy_Bubbles',sans-serif] text-[36px] font-normal text-black">
                     Female Population
                   </h2>
-                  <p className="mb-8 text-lg text-slate-600">
+                  <p className="mb-8 font-['Fuzzy_Bubbles',sans-serif] text-[20px] text-black">
                     How many of those are females?
                   </p>
                   <div className="mx-auto max-w-xs space-y-4">
                     <Input
                       type="number"
-                      className="h-20 rounded-3xl border-4 border-slate-200 text-center text-4xl font-bold text-slate-900 focus:border-emerald-400"
+                      className="h-20 rounded-[30px] border border-black text-center text-4xl font-['Fuzzy_Bubbles',sans-serif] text-black focus:border-black focus-visible:ring-0"
                       {...register("femalePopulation", { valueAsNumber: true })}
                     />
-                     <div className="rounded-xl bg-slate-100 p-3 text-sm text-slate-600">
+                     <div className="rounded-[20px] bg-[#f8f8f8] border border-black p-3 font-['Fuzzy_Bubbles',sans-serif] text-sm text-black">
                        Tip: Usually about half the population.
                      </div>
                   </div>
@@ -511,36 +552,36 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
                    <div className="mb-4 inline-flex rounded-full bg-yellow-100 px-4 py-1 text-sm font-bold uppercase tracking-wide text-yellow-800">
                     EA 3
                   </div>
-                  <h2 className="mb-2 font-display text-3xl font-bold text-slate-900">
+                  <h2 className="mb-2 font-['Fuzzy_Bubbles',sans-serif] text-[36px] font-normal text-black">
                     Babies & Frequency
                   </h2>
                   
                   <div className="mx-auto mt-8 max-w-lg space-y-8 text-left">
                     <div className="space-y-2">
-                       <Label className="text-lg">How many babies per birth?</Label>
+                       <Label className="font-['Fuzzy_Bubbles',sans-serif] text-[18px]">How many babies per birth?</Label>
                        <Input
                         type="number"
                          step="0.1"
-                        className="h-14 rounded-2xl text-lg"
+                        className="h-14 rounded-[30px] border border-black font-['Fuzzy_Bubbles',sans-serif] text-lg focus:border-black focus-visible:ring-0"
                         {...register("birthsPerCycle", { valueAsNumber: true })}
                       />
                        {errors.birthsPerCycle && (
-                        <p className="text-sm text-rose-500">{errors.birthsPerCycle.message}</p>
+                        <p className="text-sm text-rose-500 font-['Fuzzy_Bubbles',sans-serif]">{errors.birthsPerCycle.message}</p>
                       )}
                     </div>
 
                      <div className="space-y-2">
-                       <Label className="text-lg">How often do they give birth?</Label>
+                       <Label className="font-['Fuzzy_Bubbles',sans-serif] text-[18px]">How often do they give birth?</Label>
                        <div className="grid grid-cols-2 gap-2">
                          {BIRTH_FREQUENCY_OPTIONS.map((opt) => (
                            <button
                              key={opt.value}
                              type="button"
                              onClick={() => setValue("birthFrequency", opt.value, { shouldValidate: true, shouldDirty: true })}
-                             className={`rounded-xl border-2 px-4 py-3 text-sm font-bold transition-all ${
+                             className={`rounded-[20px] border px-4 py-3 font-['Fuzzy_Bubbles',sans-serif] text-sm transition-all ${
                                birthFrequency === opt.value
-                                 ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                                 : "border-slate-200 bg-white hover:border-slate-300"
+                                 ? "border-black bg-[#b9f0c7] text-black"
+                                 : "border-black bg-white hover:bg-gray-50"
                              }`}
                            >
                              {opt.label}
@@ -551,21 +592,21 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
 
                     {birthFrequency === "custom" && (
                         <div className="space-y-2">
-                            <Label>Years between births</Label>
+                            <Label className="font-['Fuzzy_Bubbles',sans-serif]">Years between births</Label>
                              <Input
                                 type="number"
                                 step="0.5"
-                                className="h-14 rounded-2xl text-lg"
+                                className="h-14 rounded-[30px] border border-black font-['Fuzzy_Bubbles',sans-serif] text-lg focus:border-black focus-visible:ring-0"
                                 {...register("customBirthCycleYears", { valueAsNumber: true })}
                               />
                                {errors.customBirthCycleYears && (
-                                <p className="text-sm text-rose-500">{errors.customBirthCycleYears.message}</p>
+                                <p className="text-sm text-rose-500 font-['Fuzzy_Bubbles',sans-serif]">{errors.customBirthCycleYears.message}</p>
                               )}
                         </div>
                     )}
 
-                    <div className="rounded-2xl bg-emerald-100 p-4 text-center">
-                        <p className="text-sm font-semibold text-emerald-800">
+                    <div className="rounded-[20px] bg-[#b9f0c7] border border-black p-4 text-center">
+                        <p className="font-['Fuzzy_Bubbles',sans-serif] text-sm text-black">
                             Result: {babiesPerYearPerMum.toFixed(2)} babies per year (average)
                         </p>
                     </div>
@@ -579,16 +620,16 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
                    <div className="mb-4 inline-flex rounded-full bg-yellow-100 px-4 py-1 text-sm font-bold uppercase tracking-wide text-yellow-800">
                     EA 4
                   </div>
-                  <h2 className="mb-2 font-display text-3xl font-bold text-slate-900">
+                  <h2 className="mb-2 font-['Fuzzy_Bubbles',sans-serif] text-[36px] font-normal text-black">
                     Lifespan
                   </h2>
-                  <p className="mb-8 text-lg text-slate-600">
+                  <p className="mb-8 font-['Fuzzy_Bubbles',sans-serif] text-[20px] text-black">
                     How many years do they live in the wild?
                   </p>
                   <div className="mx-auto max-w-xs">
                     <Input
                       type="number"
-                      className="h-20 rounded-3xl border-4 border-slate-200 text-center text-4xl font-bold text-slate-900 focus:border-emerald-400"
+                      className="h-20 rounded-[30px] border border-black text-center text-4xl font-['Fuzzy_Bubbles',sans-serif] text-black focus:border-black focus-visible:ring-0"
                       {...register("lifespan", { valueAsNumber: true })}
                     />
                   </div>
@@ -601,24 +642,24 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
                    <div className="mb-4 inline-flex rounded-full bg-yellow-100 px-4 py-1 text-sm font-bold uppercase tracking-wide text-yellow-800">
                     EA 5
                   </div>
-                  <h2 className="mb-2 font-display text-3xl font-bold text-slate-900">
+                  <h2 className="mb-2 font-['Fuzzy_Bubbles',sans-serif] text-[36px] font-normal text-black">
                     Age at First Birth
                   </h2>
-                  <p className="mb-8 text-lg text-slate-600">
+                  <p className="mb-8 font-['Fuzzy_Bubbles',sans-serif] text-[20px] text-black">
                     How old are they when they have their first baby?
                   </p>
                   <div className="mx-auto max-w-xs">
                     <Input
                       type="number"
-                      className="h-20 rounded-3xl border-4 border-slate-200 text-center text-4xl font-bold text-slate-900 focus:border-emerald-400"
+                      className="h-20 rounded-[30px] border border-black text-center text-4xl font-['Fuzzy_Bubbles',sans-serif] text-black focus:border-black focus-visible:ring-0"
                       {...register("ageAtFirstBirth", { valueAsNumber: true })}
                     />
                   </div>
-                   <div className="mt-8 rounded-2xl bg-blue-50 p-4">
-                        <p className="font-semibold text-blue-900">
+                   <div className="mt-8 rounded-[20px] bg-[#f8f8f8] border border-black p-4">
+                        <p className="font-['Fuzzy_Bubbles',sans-serif] text-black">
                             Calculated Reproductive Years: {reproductiveYears}
                         </p>
-                         <p className="text-sm text-blue-700">
+                         <p className="font-['Fuzzy_Bubbles',sans-serif] text-sm text-black">
                              Total Lifetime Babies: {lifetimeBabies.toFixed(1)}
                         </p>
                     </div>
@@ -631,20 +672,20 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
                    <div className="mb-4 inline-flex rounded-full bg-rose-100 px-4 py-1 text-sm font-bold uppercase tracking-wide text-rose-800">
                     EA 7
                   </div>
-                  <h2 className="mb-2 font-display text-3xl font-bold text-slate-900">
+                  <h2 className="mb-2 font-['Fuzzy_Bubbles',sans-serif] text-[36px] font-normal text-black">
                     Decline Rate
                   </h2>
-                  <p className="mb-8 text-lg text-slate-600">
+                  <p className="mb-8 font-['Fuzzy_Bubbles',sans-serif] text-[20px] text-black">
                     What percentage is the population declining each year?
                   </p>
                   <div className="mx-auto flex max-w-xs items-center gap-4">
                     <Input
                       type="number"
                       step="0.1"
-                      className="h-20 rounded-3xl border-4 border-slate-200 text-center text-4xl font-bold text-slate-900 focus:border-emerald-400"
+                      className="h-20 rounded-[30px] border border-black text-center text-4xl font-['Fuzzy_Bubbles',sans-serif] text-black focus:border-black focus-visible:ring-0"
                       {...register("declineRatePercent", { valueAsNumber: true })}
                     />
-                    <span className="text-4xl font-bold text-slate-400">%</span>
+                    <span className="text-4xl font-['Fuzzy_Bubbles',sans-serif] text-black">%</span>
                   </div>
                 </div>
               )}
@@ -653,39 +694,39 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
               {currentStep === 7 && (
                 <div className="space-y-8">
                     <div className="text-center">
-                        <h2 className="font-display text-3xl font-bold text-slate-900">Story Studio</h2>
-                        <p className="text-slate-600">Tell us the story behind the numbers</p>
+                        <h2 className="font-['Fuzzy_Bubbles',sans-serif] text-[36px] font-normal text-black">Story Studio</h2>
+                        <p className="font-['Fuzzy_Bubbles',sans-serif] text-[18px] text-black">Tell us the story behind the numbers</p>
                     </div>
                     
                     <div className="space-y-6">
                         <div className="space-y-2">
-                            <Label className="text-lg font-semibold">What are the main risks?</Label>
+                            <Label className="font-['Fuzzy_Bubbles',sans-serif] text-lg">What are the main risks?</Label>
                             <Textarea 
-                                className="min-h-[100px] rounded-2xl text-lg" 
+                                className="min-h-[100px] rounded-[30px] border border-black font-['Fuzzy_Bubbles',sans-serif] text-lg focus:border-black focus-visible:ring-0" 
                                 placeholder="Habitat loss, poaching..."
                                 {...register("risks")}
                             />
-                             {errors.risks && <p className="text-sm text-rose-500">{errors.risks.message}</p>}
+                             {errors.risks && <p className="text-sm text-rose-500 font-['Fuzzy_Bubbles',sans-serif]">{errors.risks.message}</p>}
                         </div>
                         
                          <div className="space-y-2">
-                            <Label className="text-lg font-semibold">Climate Change Impact</Label>
+                            <Label className="font-['Fuzzy_Bubbles',sans-serif] text-lg">Climate Change Impact</Label>
                             <Textarea 
-                                className="min-h-[100px] rounded-2xl text-lg" 
+                                className="min-h-[100px] rounded-[30px] border border-black font-['Fuzzy_Bubbles',sans-serif] text-lg focus:border-black focus-visible:ring-0" 
                                 placeholder="Warming oceans, fires..."
                                 {...register("climateImpact")}
                             />
-                            {errors.climateImpact && <p className="text-sm text-rose-500">{errors.climateImpact.message}</p>}
+                            {errors.climateImpact && <p className="text-sm text-rose-500 font-['Fuzzy_Bubbles',sans-serif]">{errors.climateImpact.message}</p>}
                         </div>
 
                          <div className="space-y-2">
-                            <Label className="text-lg font-semibold">Actions to help</Label>
+                            <Label className="font-['Fuzzy_Bubbles',sans-serif] text-lg">Actions to help</Label>
                             <Textarea 
-                                className="min-h-[100px] rounded-2xl text-lg" 
+                                className="min-h-[100px] rounded-[30px] border border-black font-['Fuzzy_Bubbles',sans-serif] text-lg focus:border-black focus-visible:ring-0" 
                                 placeholder="Plant trees, reduce waste..."
                                 {...register("actions")}
                             />
-                            {errors.actions && <p className="text-sm text-rose-500">{errors.actions.message}</p>}
+                            {errors.actions && <p className="text-sm text-rose-500 font-['Fuzzy_Bubbles',sans-serif]">{errors.actions.message}</p>}
                         </div>
                     </div>
                 </div>
@@ -694,29 +735,29 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
                {/* Step 8: Review & Submit */}
               {currentStep === 8 && (
                 <div className="text-center">
-                  <h2 className="mb-6 font-display text-3xl font-bold text-slate-900">
+                  <h2 className="mb-6 font-['Fuzzy_Bubbles',sans-serif] text-[36px] font-normal text-black">
                     Ready to see your score?
                   </h2>
                   
                   <div className="mb-8 grid gap-4 text-left">
-                      <div className="rounded-xl bg-white p-4 shadow-sm">
-                          <p className="text-sm text-slate-500">Population</p>
-                          <p className="font-bold text-slate-900">{population} total / {femalePopulation} female</p>
+                      <div className="rounded-[20px] bg-[#f8f8f8] border border-black p-4">
+                          <p className="text-sm text-black font-['Fuzzy_Bubbles',sans-serif]">Population</p>
+                          <p className="font-['Fuzzy_Bubbles',sans-serif] text-black">{population} total / {femalePopulation} female</p>
                       </div>
-                       <div className="rounded-xl bg-white p-4 shadow-sm">
-                          <p className="text-sm text-slate-500">Reproduction</p>
-                          <p className="font-bold text-slate-900">{babiesPerYearPerMum.toFixed(2)} babies/year</p>
+                       <div className="rounded-[20px] bg-[#f8f8f8] border border-black p-4">
+                          <p className="text-sm text-black font-['Fuzzy_Bubbles',sans-serif]">Reproduction</p>
+                          <p className="font-['Fuzzy_Bubbles',sans-serif] text-black">{babiesPerYearPerMum.toFixed(2)} babies/year</p>
                       </div>
-                      <div className="rounded-xl bg-white p-4 shadow-sm">
-                          <p className="text-sm text-slate-500">Decline</p>
-                          <p className="font-bold text-slate-900">{declineRatePercent}% per year</p>
+                      <div className="rounded-[20px] bg-[#f8f8f8] border border-black p-4">
+                          <p className="text-sm text-black font-['Fuzzy_Bubbles',sans-serif]">Decline</p>
+                          <p className="font-['Fuzzy_Bubbles',sans-serif] text-black">{declineRatePercent}% per year</p>
                       </div>
                   </div>
 
                   <Button
                     type="submit"
                     size="lg"
-                    className="h-16 w-full rounded-2xl bg-emerald-600 text-xl font-bold shadow-xl hover:bg-emerald-700 disabled:bg-emerald-400"
+                    className="h-16 w-full rounded-[20px] bg-[#0e172a] font-['Fuzzy_Bubbles',sans-serif] text-xl font-normal text-white shadow-none hover:bg-[#1e293b] disabled:bg-gray-400"
                     disabled={pending}
                   >
                     {pending ? (
@@ -738,24 +779,26 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
 
             {/* Navigation Buttons */}
             {currentStep < 8 && !result && (
-                <div className="mt-12 flex justify-center gap-4">
+                <div className="mt-16 flex justify-center gap-4">
                     <Button
                         variant="ghost"
                         onClick={handleBack}
                         disabled={currentStep === 0}
-                        className="h-14 rounded-xl px-8 text-slate-500 hover:bg-white hover:text-slate-900"
+                        className="h-14 rounded-[20px] px-10 font-['Fuzzy_Bubbles',sans-serif] text-[18px] font-normal text-black hover:bg-gray-100 disabled:opacity-30 border border-black bg-[#f8f8f8] hover:text-black shadow-none"
                     >
                         Back
                     </Button>
                     <Button
                         onClick={handleNext}
                         disabled={!canProceed}
-                        className="h-14 rounded-xl bg-slate-900 px-10 text-lg font-bold shadow-lg hover:bg-slate-800 disabled:opacity-50"
+                        className="h-14 rounded-[20px] bg-[#0e172a] px-12 font-['Fuzzy_Bubbles',sans-serif] text-[18px] font-normal text-white hover:bg-[#1e293b] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-none"
                     >
                         {canProceed ? (
-                          <>Next <ChevronRight className="ml-2" /></>
+                          <span className="flex items-center gap-2">
+                            Next <ChevronRight className="h-5 w-5" />
+                          </span>
                         ) : (
-                          <span className="flex items-center gap-2 text-slate-300">
+                          <span className="flex items-center gap-2">
                              <Clock className="h-4 w-4 animate-pulse" /> Wait...
                           </span>
                         )}
@@ -769,21 +812,21 @@ export const ProjectWizard = ({ species, defaultStudentName }: Props) => {
       </main>
 
       {/* Bottom Bar Fixed */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between px-8 py-6">
+      <footer className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between px-8 py-6 bg-white">
         <Button
           onClick={() => setIsThinkpadOpen(true)}
-          className="h-14 rounded-2xl bg-white px-6 text-lg font-bold text-slate-900 shadow-lg hover:bg-slate-50"
+          className="h-14 rounded-[20px] bg-[#f8f8f8] px-6 font-['Fuzzy_Bubbles',sans-serif] text-[18px] font-normal text-black border border-black hover:bg-gray-100 transition-colors shadow-none"
         >
-          <Edit3 className="mr-2 h-5 w-5" />
+          <Edit3 className="mr-2 h-5 w-5 text-black" />
           Thinkpad
         </Button>
 
         <ProgressBar current={currentStep} total={STEPS.length - 1} />
 
-        <div className="w-32" /> {/* Spacer for balance since Voice Agent is fixed absolute */}
+        <div className="w-40" /> {/* Spacer for balance since Voice Agent is fixed absolute */}
       </footer>
 
-      <VoiceAgent speciesName={species.name} emoji={species.emoji} />
+      <VoiceAgent speciesName={species.name} characterImage={species.characterImage} />
       <Thinkpad isOpen={isThinkpadOpen} onClose={() => setIsThinkpadOpen(false)} />
     </div>
   );

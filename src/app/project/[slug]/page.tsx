@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { getSpeciesBySlug } from "@/data/species";
@@ -59,35 +58,10 @@ export default async function ProjectPage({ params, searchParams }: Props) {
 
   // No existing project, show the wizard
   return (
-    <main className="mx-auto max-w-4xl px-4 pb-16 pt-6">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500"
-      >
-        ← Back to species list
-      </Link>
-
-      <section className="mt-6 rounded-[32px] border border-slate-200 bg-white/90 p-6 shadow-sm">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="text-5xl">{species.emoji}</div>
-          <div>
-            <p className="text-sm uppercase tracking-wide text-slate-500">
-              Research mission
-            </p>
-            <h1 className="font-display text-4xl text-slate-900">
-              {species.name}
-            </h1>
-            <p className="text-sm text-slate-500">{species.scientificName}</p>
-          </div>
-        </div>
-        <p className="mt-4 text-slate-600">{species.summary}</p>
-      </section>
-
-      <ProjectWizard
-        species={species}
-        defaultStudentName={metadata?.student_name ?? user.email}
-      />
-    </main>
+    <ProjectWizard
+      species={species}
+      defaultStudentName={metadata?.student_name ?? user.email}
+    />
   );
 }
 
